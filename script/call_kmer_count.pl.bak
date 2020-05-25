@@ -1,0 +1,22 @@
+#!/usr/bin/perl -w
+use strict;
+
+die "perl $0 male_fq_files female_fq_files kmer_length\n" if @ARGV!=3;
+
+my @mfiles = split(/,/,$ARGV[0]);
+my @ffiles = split(/,/,$ARGV[1]);
+my $kmer_len = $ARGV[2];
+
+my $mcommand = "kmer_count -l $kmer_len -f FQ -o output/Male_kmer.dat.gz";
+foreach my $mf (@mfiles){
+	$mcommand .=" -i $mf";
+}
+print "Executing command \"$mcommand\"\n";
+system("$mcommand");
+
+my $fcommand = "kmer_count -l $kmer_len -f FQ -o output/Female_kmer.dat.gz";
+foreach my $ff (@ffiles){
+	$fcommand .=" -i $ff";
+}
+print "\nExecuting command \"$fcommand\"\n";
+system("$fcommand");

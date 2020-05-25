@@ -1,0 +1,150 @@
+#!/bin/sh
+
+script_abs=$(readlink -f "$0")
+script_dir=$(dirname $script_abs)
+export PATH=$PATH:$script_dir/script
+export LC_ALL=C
+
+usageHelp="Usage: ${0##*/} (parameters with * must be supplied!)\n\n-s <string>*       Short-read files of targeted genomes with comma separated\n-m <string>*       Male short-read files with comma separated\n-f <string>*       Female short-read files with comma separated\n-l <string>*       Long-read files of targeted genomes with comma separated, MUST be fasta\n-g <number>*       Approximate genome size of targeted Y chromosome. (The unit is Megabase,DO NOT add the suffix \"M\" or \"m\")\n-i <int>*          Minimum coverage of k-mers\n-a <int>           Maximum coverage of k-mers (default: unlimit)\n-k <int>           K-mer length (default: 21)\n-h                 Help and exit."
+printHelpAndExit() {
+	echo -e "$usageHelp"
+	exit;
+}
+
+while getopts "s:m:f:l:g:i:a:k:h" opt; do
+	case $opt in
+		s) SREAD=$OPTARG ;;
+		m) MSREAD=$OPTARG ;;
+		f) FSREAD=$OPTARG ;;
+		l) LREAD=$OPTARG ;;
+		g) GSIZE=$OPTARG ;;
+		i) COV=$OPTARG ;;
+		a) MCOV=$OPTARG ;;
+		k) KLEN=$OPTARG ;;
+		h) printHelpAndExit 0;;
+	esac
+done
+
+if [ -z "$SREAD" ] || [ -z "$MSREAD" ] || [ -z "$FSREAD" ] || [ -z "$LREAD" ] || [ -z "$GSIZE" ] || [ -z "$COV" ];then
+	printHelpAndExit
+	exit
+fi
+
+if [ -z "$KLEN" ];then
+	KLEN=21
+fi
+
+if [ ! -d "output" ];then
+	mkdir output
+fi
+
+#obtain specific-Y kmers
+
+echo "***********************************Preparation*************************************"
+call_kmer_count.pl $SREAD $MSREAD $FSREAD $KLEN
+KMER="output/SRY_kmer.txt"
+if [ -n "$MCOV" ]
+then
+	echo "Min coverage:$COV;max coverage:$MCOV"
+	zcat output/Target_kmer.dat.gz | awk '$2>='$COV' && $2<='$MCOV'' |gzip > output/Target_ft_kmer.dat.gz
+else
+	echo "Min coverage:$COV;max coverage:unlimit"
+	zcat output/Target_kmer.dat.gz | awk '$2>='$COV'' |gzip > output/Target_ft_kmer.dat.gz
+fi
+filterx -k s output/Target_ft_kmer.dat.gz:req=Y output/Male_kmer.dat.gz:req=Y output/Female_kmer.dat.gz:req=N |cut -f 1-2 > $KMER
+
+#calculate specific k-mer density
+NUM=`wc -l $KMER |awk 'BEGIN{ORS=""}{print $1}'`
+echo "The number of specific k-mers is $NUM."
+CORRACT_RATE=0.85 #the correct rate of long reads from third sequencing
+DENSITY=`perl -e '$c=sprintf ("%.1f",'${CORRACT_RATE}'**'$KLEN'*'$NUM'*1000/('$GSIZE'*1000000)); print $c;'`
+echo "The kmer length is $KLEN;Average specific k-mer density is $DENSITY per kb of long reads."
+
+echo -e "\n***********************************Process*****************************************"
+
+#pre-process the input file
+create_reverse_complement.pl $KMER > output/kmer_rc.txt
+LREAD=${LREAD//,/ };zcat $LREAD | changeid.pl output/origin2newid.txt output/changeid.fa
+samtools faidx output/changeid.fa
+offset_seq.pl output/changeid.fa.fai > output/ONTseq_offset.txt
+
+#split kmer
+#PART=`perl -e '$p=(int('$NUM'/5000)+1);print $p;'`
+PART=`perl -e '$p=(int('$NUM'/100000)+1);print $p;'`
+#split -l 5000 output/kmer_rc.txt output/x
+split -l 200000 output/kmer_rc.txt output/x
+echo "Dividing the kmer file into $PART parts to decrease the memory. xaa,xab,xac..."
+
+#sort kmer
+for k in `ls output/x??`
+do
+	sort $k >$k.st &
+done
+wait
+
+echo "Sort kmer has been done -> output/x??.st"
+#search long reads contained specific kmers
+for s in `ls output/x??`
+do
+        grep -F -b -n -o -f $s output/changeid.fa > $s.kmercount &
+done
+wait
+
+echo "Kmer searching on long reads has been done -> output/x??.kmercount"
+#obtain the position of specific kmers on each read
+
+for c in `ls output/x??`
+do
+	get_loci.pl output/ONTseq_offset.txt $c.kmercount > $c.loci &
+done
+wait
+
+echo "Obtaining kmer position on long reads has been done -> output/x??.loci"
+#get the extended sequences including specific kmers
+for l in `ls output/x??`
+do
+	get_fa.pl $l.loci output/changeid.fa $KLEN >$l.loci.fa &
+done
+wait
+
+echo "Obtaining extended sequences of kmer on long reads has been done -> output/x??.loci.fa"
+#acquire the kmers in sequences
+
+for f in `ls output/x??`
+do
+	kmer_count -l $KLEN -i $f.loci.fa -o $f.loci.kmer &
+done
+wait
+
+echo "Obtaining kmers of extended sequences has been done -> output/x??.loci.kmer"
+#filter kmers of last step
+for lk in `ls output/x??`
+do
+	filterx -k s $lk.loci.kmer $lk.st |cut -f 1 > $lk.need.kmer &
+done
+wait
+
+echo "Searching specific kmers from last step has been done -> output/x??.need.kmer"
+#the relationship between kmer and read id
+for lf in `ls output/x??`
+do
+	kmer2id.pl $lf.loci.fa $KLEN | sort -k1,1 -k2,2 -u > $lf.loci.kmer2id &
+done
+wait
+
+echo "Obtaining the relationship bewteen kmer and read has been done -> output/x??.loci.kmer2id"
+#get the id
+for li in `ls output/x??`
+do
+	filterx -k s $li.loci.kmer2id:dup=Y $li.need.kmer | cut -f 2 > $li.seqid &
+done
+wait
+
+echo "Obtaining the IDs of reads including specific kmer -> output/x??.seqid"
+#get reads
+echo -e "\n***************************************Final****************************************"
+cat output/x??.seqid >output/ALL.seqid
+count_density.pl output/ALL.seqid output/changeid.fa.fai > output/ALL.density
+select_reads.pl output/ALL.density $DENSITY output/origin2newid.txt output/changeid.fa >output/candidate_reads.fa
+echo "DONE!"
+echo "The final filtered reads file -> output/candidate_reads.fa"
