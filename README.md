@@ -12,7 +12,7 @@ Just type ./SRY to show the help and use it.
 
 Usage: ./SRY (parameters with * must be supplied!)
 
--s <string>*      Short-read files of targeted genomes with comma separated
+-s <string>*    Short-read files of targeted genomes with comma separated
   
 -m <string>*      Male short-read files with comma separated
   
