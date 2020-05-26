@@ -5,7 +5,7 @@ covers more genomic regions  of Y chromosome.
 
 SRY selects half-depth k-mers of target (such as XY male) individual, and identified male specific k-mers via removing discrete k-mers from X chromosome and autosomes based on population data. To decrease the impact of population structure and sequencing errors, SRY caculated MSK (male specific k-mers) density of long reads and excludes those with lower marker density.
 
-#Installation
+# Installation
 Just type ./SRY.sh to show the help and use it.
 
-#Usage
+# Usage
