@@ -29,3 +29,7 @@ Usage: ./SRY (parameters with * must be supplied!)
 -k <int>					K-mer length (default: 21)
   
 -h								Help and exit.
+
+# Paper
+
+The preprint paper of our method is online: https://www.biorxiv.org/content/10.1101/2020.05.25.115592v1
