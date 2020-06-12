@@ -24,9 +24,9 @@ Usage: ./SRY (parameters with * must be supplied!)
   
 -i \<int\>*　　　 Minimum coverage of k-mers
   
--a /<int/>　　　　Maximum coverage of k-mers (default: unlimit)
+-a \<int\>　　　　Maximum coverage of k-mers (default: unlimit)
   
--k /<int/>　　　　K-mer length (default: 21)
+-k \<int\>　　　　K-mer length (default: 21)
   
 -h								Help and exit.
 
