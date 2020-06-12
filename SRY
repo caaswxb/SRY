@@ -145,6 +145,7 @@ echo "Obtaining the IDs of reads including specific kmer -> output/x??.seqid"
 echo -e "\n***************************************Final****************************************"
 cat output/x??.seqid >output/ALL.seqid
 count_density.pl output/ALL.seqid output/changeid.fa.fai > output/ALL.density
-select_reads.pl output/ALL.density $DENSITY output/origin2newid.txt output/changeid.fa >output/candidate_reads.fa
+select_reads.pl output/ALL.density $DENSITY output/origin2newid.txt output/changeid.fa
 echo "DONE!"
-echo "The final filtered reads file -> output/candidate_reads.fa"
+echo "The final filtered reads file of Y/W chromosome -> output/candidate_Y_reads.fa"
+echo "The final filtered reads file of autosome and X/Z chromosome -> output/candidate_autoX_reads.fa"

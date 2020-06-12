@@ -38,6 +38,11 @@ close IN1;
 my $in2 = $ARGV[3];
 open IN2,$in2;
 
+my $out = "output/candidate_Y_reads.fa";
+open OUT,">$out";
+my $out1 = "output/candidate_autoX_reads.fa";
+open OUT1,">$out1";
+
 my $id;
 $flag = 0;
 while (<IN2>){
@@ -46,14 +51,19 @@ while (<IN2>){
 		$id = $1;
 		if (defined $hash{$id}){
 			$flag = 1;
-			print ">$old2new{$id}\n";
+			print OUT ">$old2new{$id}\n";
 		}else{
 			$flag = 0;
+			print OUT1 ">$old2new{$id}\n";
 		}
 	}else{	
 		if ($flag == 1){
-			print "$_\n";
+			print OUT "$_\n";
+		}else{
+			print OUT1 "$_\n";
 		}
 	}
 }
 close IN2;
+close OUT;
+close OUT1;
