@@ -5,7 +5,7 @@ script_dir=$(dirname $script_abs)
 export PATH=$PATH:$script_dir/script
 export LC_ALL=C
 
-usageHelp="Author:Xiaobo Wang\nEmail:wangxiaobo@caas.cn\n\nUsage: ./${0##*/} (parameters with * must be supplied!)\n\n-s <string>*       Short-read files of targeted genomes with comma separated\n-m <string>*       Male short-read files with comma separated\n-f <string>*       Female short-read files with comma separated\n-l <string>*       Long-read files of targeted genomes with comma separated, MUST be fasta\n-g <number>*       Approximate genome size of targeted Y chromosome. (The unit is Megabase,DO NOT add the suffix \"M\" or \"m\")\n-i <int>*          Minimum coverage of k-mers\n-a <int>           Maximum coverage of k-mers (default: unlimit)\n-k <int>           K-mer length (default: 21)\n-h                 Help and exit."
+usageHelp="Author:Xiaobo Wang\nEmail:wangxiaobo@caas.cn\n\nUsage: ./${0##*/} (parameters with * must be supplied!)\n\n-s <string>*       Short-read files of targeted genomes with comma separated\n-m <string>*       Male short-read files with comma separated\n-f <string>*       Female short-read files with comma separated\n-l <string>*       Long-read files of targeted genomes with comma separated, MUST be fasta\n-g <number>*       Approximate genome size of targeted Y chromosome. (The unit is Mb,DO NOT add the suffix \"M\")\n-i <int>*          Minimum coverage of k-mers\n-a <int>           Maximum coverage of k-mers (default: unlimit)\n-k <int>           K-mer length (default: 21)\n-h                 Help and exit."
 printHelpAndExit() {
 	echo -e "$usageHelp"
 	exit;
