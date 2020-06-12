@@ -12,21 +12,21 @@ We just need samtools on your environment, such as excute "export PATH=$PATH:/en
 
 Usage: ./SRY (parameters with * must be supplied!)
 
--s \<string\>*　　　Short-read files of targeted genomes with comma separated
+-s \<string\>*　　Short-read files of targeted genomes with comma separated
   
--m /<string/>*　　　Male short-read files with comma separated
+-m \<string\>*　　Male short-read files with comma separated
   
--f /<string/>*			Female short-read files with comma separated
+-f \<string\>*　　Female short-read files with comma separated
   
--l /<string/>*			Long-read files of targeted genomes with comma separated, MUST be fasta
+-l \<string\>*　　Long-read files of targeted genomes with comma separated, MUST be fasta
   
--g /<number/>*			Approximate genome size of targeted Y chromosome. (The unit is Megabase,DO NOT add the suffix "M" or "m")
+-g \<number\>*　　Approximate genome size of targeted Y chromosome. (The unit is Megabase,DO NOT add the suffix "M" or "m")
   
--i /<int/>*　　　　　Minimum coverage of k-mers
+-i \<int\>*　　　 Minimum coverage of k-mers
   
--a /<int/>					Maximum coverage of k-mers (default: unlimit)
+-a /<int/>　　　　Maximum coverage of k-mers (default: unlimit)
   
--k /<int/>					K-mer length (default: 21)
+-k /<int/>　　　　K-mer length (default: 21)
   
 -h								Help and exit.
 
