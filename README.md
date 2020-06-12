@@ -12,11 +12,11 @@ We just need samtools on your environment, such as excute "export PATH=$PATH:/en
 
 Usage: ./SRY (parameters with * must be supplied!)
 
--s \<string\>*　　Short-read files of targeted genomes with comma separated
+-s \<string\>*  Short-read files of targeted genomes with comma separated
   
--m \<string\>*　　Male short-read files with comma separated
+-m \<string\>*  Male short-read files with comma separated
   
--f \<string\>*　　Female short-read files with comma separated
+-f \<string\>*  Female short-read files with comma separated
   
 -l \<string\>*　　Long-read files of targeted genomes with comma separated, MUST be fasta
   
