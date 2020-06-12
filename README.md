@@ -9,17 +9,16 @@ SRY selects half-depth k-mers of target (such as XY male) individual, and identi
 We just need samtools on your environment, such as excute "export PATH=$PATH:/env/soft/samtools-0.x.xx/".
 
 # Usage
-
-Usage: ./SRY (parameters with * must be supplied!)
-    -s \<string\>*  Short-read files of targeted genomes with comma separated
-    -m \<string\>*  Male short-read files with comma separated
-    -f \<string\>*  Female short-read files with comma separated
-    -l \<string\>*　　Long-read files of targeted genomes with comma separated, MUST be fasta
-    -g \<number\>*　　Approximate genome size of targeted Y chromosome. (The unit is Mb,do NOT add the suffix "M")
-    -i \<int\>*　　　 Minimum coverage of k-mers
-    -a \<int\>　　　　Maximum coverage of k-mers (default: unlimit)
-    -k \<int\>　　　　K-mer length (default: 21)
-    -h								Help and exit.
+        Usage: ./SRY (parameters with * must be supplied!)
+        -s \<string\>*  Short-read files of targeted genomes with comma separated
+        -m \<string\>*  Male short-read files with comma separated
+        -f \<string\>*  Female short-read files with comma separated
+        -l \<string\>*　　Long-read files of targeted genomes with comma separated, MUST be fasta
+        -g \<number\>*　　Approximate genome size of targeted Y chromosome. (The unit is Mb,do NOT add the suffix "M")
+        -i \<int\>*　　　 Minimum coverage of k-mers
+        -a \<int\>　　　　Maximum coverage of k-mers (default: unlimit)
+        -k \<int\>　　　　K-mer length (default: 21)
+        -h								Help and exit.
 
 # Paper
 
