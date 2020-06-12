@@ -10,6 +10,7 @@ We just need samtools on your environment, such as excute "export PATH=$PATH:/en
 
 # Usage
      Usage: ./SRY (parameters with * must be supplied!)
+     
         -s <string>*     Short-read files of targeted genomes with comma separated
         -m <string>*     Male short-read files with comma separated
         -f <string>*     Female short-read files with comma separated
@@ -18,7 +19,7 @@ We just need samtools on your environment, such as excute "export PATH=$PATH:/en
         -i <int>*        Minimum coverage of k-mers
         -a <int>         Maximum coverage of k-mers (default: unlimit)
         -k <int>         K-mer length (default: 21)
-        -h                 Help and exit.
+        -h               Help and exit.
 
 # Paper
 
