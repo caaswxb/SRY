@@ -20,7 +20,7 @@ Usage: ./SRY (parameters with * must be supplied!)
   
 -l \<string\>*　　Long-read files of targeted genomes with comma separated, MUST be fasta
   
--g \<number\>*　　Approximate genome size of targeted Y chromosome. (The unit is Megabase,DO NOT add the suffix "M" or "m")
+-g \<number\>*　　Approximate genome size of targeted Y chromosome. (The unit is Mb,do NOT add the suffix "M")
   
 -i \<int\>*　　　 Minimum coverage of k-mers
   
