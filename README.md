@@ -16,7 +16,7 @@ We just need samtools on your environment, such as excute "export PATH=$PATH:/en
         -f <string>*     Female short-read files with comma separated
         -l <string>*     Long-read files of targeted genomes with comma separated, MUST be fasta
         -g <number>*     Approximate genome size of targeted Y chromosome. (The unit is Mb,do NOT add the suffix "M")
-        -i <int>*        Minimum coverage of k-mers
+        -i <int>*        Minimum coverage of k-mers (the depth of the first valley in k-mer distribution plotted by genomescope or other tools)
         -a <int>         Maximum coverage of k-mers (default: unlimit)
         -k <int>         K-mer length (default: 21)
         -h               Help and exit.
