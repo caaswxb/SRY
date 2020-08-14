@@ -27,20 +27,20 @@ my %old2new;
 while (<IN1>){
 	chomp;
 	@info = split(/\t/);
-	if ($flag == 0){
-		$flag =1;
-	}else{
+	#if ($flag == 0){
+	#	$flag =1;
+	#}else{
 		$old2new{$info[1]} = $info[0];
-	}
+	#}
 }
 close IN1;
 
 my $in2 = $ARGV[3];
 open IN2,$in2;
 
-my $out = "output/candidate_Y_reads.fa";
+my $out = "output/candidate_target_reads.fa";
 open OUT,">$out";
-my $out1 = "output/candidate_autoX_reads.fa";
+my $out1 = "output/candidate_other_reads.fa";
 open OUT1,">$out1";
 
 my $id;
