@@ -65,8 +65,7 @@ echo -e "\n***********************************Process***************************
 #pre-process the input file
 create_reverse_complement.pl $KMER > output/kmer_rc.txt
 LREAD=${LREAD//,/ }
-for f in $( ls $LREAD ); do seqtk seq -CA $f; done | tee >(grep '>' - |awk '{gsub(/^>/,"");print $0"\t"NR}'> output/origin2newid.txt) | seqtk rename - > outp
-ut/changeid.fa
+for f in $( ls $LREAD ); do seqtk seq -CA $f; done | tee >(grep '>' - |awk '{gsub(/^>/,"");print $0"\t"NR}'> output/origin2newid.txt) | seqtk rename - > output/changeid.fa
 samtools faidx output/changeid.fa
 offset_seq.pl output/changeid.fa.fai > output/ONTseq_offset.txt
 
