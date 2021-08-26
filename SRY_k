@@ -5,27 +5,23 @@ script_dir=$(dirname $script_abs)
 export PATH=$PATH:$script_dir/script
 export LC_ALL=C
 
-usageHelp="Author:Xiaobo Wang\nEmail:wangxiaobo@caas.cn\n\nUsage: ./${0##*/} (parameters with * must be supplied!)\n\n-s <string>*       Short-read files of targeted genomes with comma separated\n-m <string>*       Male short-read files with comma separated\n-f <string>*       Female short-read files with comma separated\n-l <string>*       Long-read files of targeted genomes with comma separated (support for both fa and fq)\n-g <number>*       Approximate genome size of targeted Y/W chromosome. such as 52 for human Y(The unit is Megabase)\n-i <int>*          Minimum coverage of k-mers (the depth of the first valley in k-mer distribution plotted by KmerGenie or other tools)\n-a <int>           Maximum coverage of k-mers (default: unlimit)\n-k <int>           K-mer length (default: 21)\n-h                 Help and exit."
+usageHelp="Author:Xiaobo Wang\nEmail:wangxiaobo@caas.cn\n\nUsage: ./${0##*/} (parameters with * must be supplied!)\n\n-i <string>*       Specific-kmer file\n-l <string>*       Long-read files of targeted genomes with comma separated (support for both fa and fq)\n-g <number>*       Approximate genome size of targeted Y/W chromosome. such as 52 for human Y(The unit is Megabase)\n-k <int>           K-mer length (default: 21)\n-h                 Help and exit."
 printHelpAndExit() {
 	echo -e "$usageHelp"
 	exit;
 }
 
-while getopts "s:m:f:l:g:i:a:k:h" opt; do
+while getopts "i:l:g:k:h" opt; do
 	case $opt in
-		s) SREAD=$OPTARG ;;
-		m) MSREAD=$OPTARG ;;
-		f) FSREAD=$OPTARG ;;
+		i) KMER=$OPTARG ;;
 		l) LREAD=$OPTARG ;;
 		g) GSIZE=$OPTARG ;;
-		i) COV=$OPTARG ;;
-		a) MCOV=$OPTARG ;;
 		k) KLEN=$OPTARG ;;
 		h) printHelpAndExit 0;;
 	esac
 done
 
-if [ -z "$SREAD" ] || [ -z "$MSREAD" ] || [ -z "$FSREAD" ] || [ -z "$LREAD" ] || [ -z "$GSIZE" ] || [ -z "$COV" ];then
+if [ -z "$KMER" ] || [ -z "$LREAD" ] || [ -z "$GSIZE" ];then
 	printHelpAndExit
 	exit
 fi
@@ -41,18 +37,6 @@ fi
 #obtain specific-Y kmers
 
 echo "***********************************Preparation*************************************"
-call_kmer_count.pl $SREAD $MSREAD $FSREAD $KLEN
-KMER="output/SRY_kmer.txt"
-if [ -n "$MCOV" ]
-then
-	echo "Min coverage:$COV;max coverage:$MCOV"
-	zcat output/Target_kmer.dat.gz | awk '$2>='$COV' && $2<='$MCOV'' |gzip > output/Target_ft_kmer.dat.gz
-else
-	echo "Min coverage:$COV;max coverage:unlimit"
-	zcat output/Target_kmer.dat.gz | awk '$2>='$COV'' |gzip > output/Target_ft_kmer.dat.gz
-fi
-filterx -k s output/Target_ft_kmer.dat.gz:req=Y output/Male_kmer.dat.gz:req=Y output/Female_kmer.dat.gz:req=N |cut -f 1-2 > $KMER
-
 #calculate specific k-mer density
 NUM=`wc -l $KMER |awk 'BEGIN{ORS=""}{print $1}'`
 echo "The number of specific k-mers is $NUM."
@@ -148,5 +132,5 @@ cat output/x??.seqid >output/ALL.seqid
 count_density.pl output/ALL.seqid output/changeid.fa.fai > output/ALL.density
 select_reads.pl output/ALL.density $DENSITY output/origin2newid.txt output/changeid.fa
 echo "DONE!"
-echo "The final filtered reads file of Y/W chromosome -> output/candidate_target.fa"
-echo "The final filtered reads file of autosome and X/Z chromosome -> output/candidate_other.fa"
+echo "The final filtered reads file of Y/W chromosome -> output/candidate_target_reads.fa"
+echo "The final filtered reads file of autosome and X/Z chromosome -> output/candidate_other_reads.fa"
