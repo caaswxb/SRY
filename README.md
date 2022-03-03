@@ -3,23 +3,25 @@ SRY is an in silicon method for sorting long-read of sex-limited (Y or W) chromo
 sorting efficiency than tradictional chromosome flow-sorting method. Compared with Whole-genome assembly (WGA) or trio-binning, SRY
 covers more genomic regions  of Y chromosome.
 
-SRY selects half-depth k-mers of target (such as XY male) individual, and identified male specific k-mers via removing discrete k-mers from X chromosome and autosomes based on population data. To decrease the impact of population structure and sequencing errors, SRY caculated MSK (male specific k-mers) density of long reads and excludes those with lower marker density.
+SRY identified male specific k-mers (MSK) based on population data. To decrease the impact of population structure and sequencing errors, SRY caculated MSK density of each long read and excludes those with lower marker density.
 
 # Installation
-We need samtools && seqtk on your environment, you can use conda to install them and execute "export PATH=$PATH:/env/conda/bin/".
+We need samtools,seqtk and jellyfish in your environment, you can use conda to install them and execute "export PATH=$PATH:/env/conda/bin/".
 
 # Usage
      Usage: ./SRY (parameters with * must be supplied!)
      
-        -s <string>*     Short-read files of targeted genomes with comma separated
         -m <string>*     Male short-read files with comma separated
         -f <string>*     Female short-read files with comma separated
-        -l <string>*     Long-read files of targeted genomes with comma separated, (support fa or fq)
+        -l <string>*     Long-read files of targeted genomes with comma separated, (support for both fa and fq)
         -g <number>*     Approximate genome size of targeted Y chromosome. (The unit is Mb,do NOT add the suffix "M")
-        -i <int>*        Minimum coverage of k-mers (the depth of the first valley in k-mer distribution plotted by KmerGenie or other tools)
+        -i <int>         Minimum coverage of k-mers (default: 2)
         -a <int>         Maximum coverage of k-mers (default: unlimit)
         -k <int>         K-mer length (default: 21)
+        -p <int>         CPU number (default: 1)
         -h               Help and exit.
+
+SRY_k is used for sorting long reads based on kmer file, and SRY_contig is used for sorting contigs based on kmer file.
 
 # Paper
 
