@@ -5,15 +5,14 @@ script_dir=$(dirname $script_abs)
 export PATH=$PATH:$script_dir/script
 export LC_ALL=C
 
-usageHelp="Author:Xiaobo Wang\nEmail:wangxiaobo@caas.cn\n\nUsage: ./${0##*/} (parameters with * must be supplied!)\n\n-s <string>*       Short-read files of targeted genomes with comma separated\n-m <string>*       Male short-read files with comma separated\n-f <string>*       Female short-read files with comma separated\n-l <string>*       Long-read files of targeted genomes with comma separated (support for both fa and fq)\n-g <number>*       Approximate genome size of targeted Y/W chromosome. such as 52 for human Y(The unit is Megabase)\n-i <int>*          Minimum coverage of k-mers (the depth of the first valley in k-mer distribution plotted by KmerGenie or other tools)\n-a <int>           Maximum coverage of k-mers (default: unlimit)\n-k <int>           K-mer length (default: 21)\n-h                 Help and exit."
+usageHelp="\nUsage: ./${0##*/} (parameters with * must be supplied!)\n\n-m <string>*       Male short-read files with comma separated\n-f <string>*       Female short-read files with comma separated\n-l <string>*       Long-read files of targeted genomes with comma separated (support for both fa and fq)\n-g <number>*       Approximate genome size of targeted Y/W chromosome. such as 52 for human Y(The unit is Megabase)\n-i <int>           Minimum coverage of k-mers (default: 2)\n-a <int>           Maximum coverage of k-mers (default: unlimit)\n-k <int>           K-mer length (default: 21)\n-p <int>           CPU number (default: 1)\n-h                 Help and exit."
 printHelpAndExit() {
 	echo -e "$usageHelp"
 	exit;
 }
 
-while getopts "s:m:f:l:g:i:a:k:h" opt; do
+while getopts "m:f:l:g:i:a:k:p:h" opt; do
 	case $opt in
-		s) SREAD=$OPTARG ;;
 		m) MSREAD=$OPTARG ;;
 		f) FSREAD=$OPTARG ;;
 		l) LREAD=$OPTARG ;;
@@ -21,11 +20,12 @@ while getopts "s:m:f:l:g:i:a:k:h" opt; do
 		i) COV=$OPTARG ;;
 		a) MCOV=$OPTARG ;;
 		k) KLEN=$OPTARG ;;
+		p) CPU=$OPTARG ;;
 		h) printHelpAndExit 0;;
 	esac
 done
 
-if [ -z "$SREAD" ] || [ -z "$MSREAD" ] || [ -z "$FSREAD" ] || [ -z "$LREAD" ] || [ -z "$GSIZE" ] || [ -z "$COV" ];then
+if [ -z "$MSREAD" ] || [ -z "$FSREAD" ] || [ -z "$LREAD" ] || [ -z "$GSIZE" ];then
 	printHelpAndExit
 	exit
 fi
@@ -34,24 +34,58 @@ if [ -z "$KLEN" ];then
 	KLEN=21
 fi
 
+if [ -z "$COV" ];then
+        COV=2
+fi
+
+if [ -z "$MCOV" ];then
+        MCOV=0
+fi
+
+if [ -z "$CPU" ];then
+        CPU=1
+fi
+
+
 if [ ! -d "output" ];then
 	mkdir output
+fi
+
+#judge if the softwares needed are installed.
+if ! type jellyfish >/dev/null 2>&1; then
+	echo 'jellyfish is not installed!'
+	exit
+fi
+
+if ! type samtools >/dev/null 2>&1; then
+	echo 'samtools is not installed!'
+	exit
+fi
+
+if ! type seqtk >/dev/null 2>&1; then
+	echo 'seqtk is not installed!'
+	exit
 fi
 
 #obtain specific-Y kmers
 
 echo "***********************************Preparation*************************************"
-call_kmer_count.pl $SREAD $MSREAD $FSREAD $KLEN
+MREAD=${MSREAD//,/ }
+FREAD=${FSREAD//,/ }
 KMER="output/SRY_kmer.txt"
-if [ -n "$MCOV" ]
+if [[ $MCOV == 0 ]]
 then
-	echo "Min coverage:$COV;max coverage:$MCOV"
-	zcat output/Target_kmer.dat.gz | awk '$2>='$COV' && $2<='$MCOV'' |gzip > output/Target_ft_kmer.dat.gz
-else
 	echo "Min coverage:$COV;max coverage:unlimit"
-	zcat output/Target_kmer.dat.gz | awk '$2>='$COV'' |gzip > output/Target_ft_kmer.dat.gz
+	jellyfish count -C -m $KLEN -s 1000000000 -t $CPU -o male.jf <(zcat $MREAD) && jellyfish dump -ct -L $COV male.jf | sort -k1,1 | gzip > output/male_kmer.gz
+	jellyfish count -C -m $KLEN -s 1000000000 -t $CPU -o female.jf <(zcat $FREAD) && jellyfish dump -ct -L $COV female.jf | sort -k1,1 | gzip > output/female_kmer.gz
+	rm male.jf female.jf
+else
+	echo "Min coverage:$COV;max coverage:$MCOV"
+	jellyfish count -C -m $KLEN -s 1000000000 -t $CPU -o male.jf <(zcat $MREAD) && jellyfish dump -ct -L $COV -U $MCOV male.jf | sort -k1,1 | gzip > output/male_kmer.gz
+	jellyfish count -C -m $KLEN -s 1000000000 -t $CPU -o female.jf <(zcat $FREAD) && jellyfish dump -ct -L $COV -U $MCOV female.jf | sort -k1,1 | gzip > output/female_kmer.gz
+	rm male.jf female.jf
 fi
-filterx -k s output/Target_ft_kmer.dat.gz:req=Y output/Male_kmer.dat.gz:req=Y output/Female_kmer.dat.gz:req=N |cut -f 1-2 > $KMER
+filterx -k s -1 'cnt=1' output/male_kmer.gz:req=Y output/female_kmer.gz |cut -f 1-2 > $KMER
 
 #calculate specific k-mer density
 NUM=`wc -l $KMER |awk 'BEGIN{ORS=""}{print $1}'`
@@ -67,84 +101,56 @@ create_reverse_complement.pl $KMER > output/kmer_rc.txt
 LREAD=${LREAD//,/ }
 for f in $( ls $LREAD ); do seqtk seq -CA $f; done | tee >(grep '>' - |awk '{gsub(/^>/,"");print $0"\t"NR}'> output/origin2newid.txt) | seqtk rename - > output/changeid.fa
 samtools faidx output/changeid.fa
-offset_seq.pl output/changeid.fa.fai > output/ONTseq_offset.txt
 
 #split kmer
-#PART=`perl -e '$p=(int('$NUM'/5000)+1);print $p;'`
 PART=`perl -e '$p=(int('$NUM'/100000)+1);print $p;'`
-#split -l 5000 output/kmer_rc.txt output/x
 split -l 200000 output/kmer_rc.txt output/x
 echo "Dividing the kmer file into $PART parts to decrease the memory. xaa,xab,xac..."
 
 #sort kmer
-for k in `ls output/x??`
-do
-	sort $k >$k.st &
-done
-wait
+for k in `ls output/x* | grep -v '\.'`;do echo "sort $k >$k.st";done > temp.sh
+parallel -j $CPU <temp.sh
+echo "Sort kmer has been done -> output/x*.st"
 
-echo "Sort kmer has been done -> output/x??.st"
 #search long reads contained specific kmers
-for s in `ls output/x??`
-do
-        grep -F -b -n -o -f $s output/changeid.fa > $s.kmercount &
-done
-wait
+for s in `ls output/x* | grep -v '\.'`;do echo "grep -F -b -n -o -f $s output/changeid.fa > $s.kmercount";done >temp.sh
+parallel -j $CPU <temp.sh
+echo "Kmer searching on long reads has been done -> output/x*.kmercount"
 
-echo "Kmer searching on long reads has been done -> output/x??.kmercount"
 #obtain the position of specific kmers on each read
+for c in `ls output/x* | grep -v '\.'`;do echo "get_loci.pl output/changeid.fa.fai $c.kmercount $KLEN > $c.loci";done >temp.sh
+parallel -j $CPU <temp.sh
+echo "Obtaining kmer position on long reads has been done -> output/x*.loci"
 
-for c in `ls output/x??`
-do
-	get_loci.pl output/ONTseq_offset.txt $c.kmercount $KLEN > $c.loci &
-done
-wait
-
-echo "Obtaining kmer position on long reads has been done -> output/x??.loci"
 #get the extended sequences including specific kmers
-for l in `ls output/x??`
-do
-	seqtk subseq output/changeid.fa $l.loci >$l.loci.fa &
-done
-wait
+for l in `ls output/x* | grep -v '\.'`;do echo "seqtk subseq output/changeid.fa $l.loci >$l.loci.fa";done >temp.sh
+parallel -j $CPU <temp.sh
+echo "Obtaining extended sequences of kmer on long reads has been done -> output/x*.loci.fa"
 
-echo "Obtaining extended sequences of kmer on long reads has been done -> output/x??.loci.fa"
 #acquire the kmers in sequences
+for f in `ls output/x* | grep -v '\.'`;do echo "jellyfish count -C -m $KLEN -s 10000000 -o $f.loci.jf $f.loci.fa && jellyfish dump -ct $f.loci.jf | sort -k1,1 > $f.loci.kmer";done >temp.sh
+parallel -j $CPU <temp.sh
+echo "Obtaining kmers of extended sequences has been done -> output/x*.loci.kmer"
 
-for f in `ls output/x??`
-do
-	kmer_count -l $KLEN -i $f.loci.fa -o $f.loci.kmer &
-done
-wait
-
-echo "Obtaining kmers of extended sequences has been done -> output/x??.loci.kmer"
 #filter kmers of last step
-for lk in `ls output/x??`
-do
-	filterx -k s $lk.loci.kmer $lk.st |cut -f 1 > $lk.need.kmer &
-done
-wait
+for lk in `ls output/x* | grep -v '\.'`;do echo "filterx -k s $lk.loci.kmer $lk.st |cut -f 1 > $lk.need.kmer";done >temp.sh
+parallel -j $CPU <temp.sh
+echo "Searching specific kmers from last step has been done -> output/x*.need.kmer"
 
-echo "Searching specific kmers from last step has been done -> output/x??.need.kmer"
 #the relationship between kmer and read id
-for lf in `ls output/x??`
-do
-	kmer2id.pl $lf.loci.fa $KLEN | sort -k1,1 -k2,2 -u > $lf.loci.kmer2id &
-done
-wait
+for lf in `ls output/x* | grep -v '\.'`;do echo "kmer2id.pl $lf.loci.fa $KLEN | sort -k1,1 -k2,2 -u > $lf.loci.kmer2id";done >temp.sh
+parallel -j $CPU <temp.sh
+echo "Obtaining the relationship bewteen kmer and read has been done -> output/x*.loci.kmer2id"
 
-echo "Obtaining the relationship bewteen kmer and read has been done -> output/x??.loci.kmer2id"
 #get the id
-for li in `ls output/x??`
-do
-	filterx -k s $li.loci.kmer2id:dup=Y $li.need.kmer | cut -f 2 > $li.seqid &
-done
-wait
+for li in `ls output/x* | grep -v '\.'`;do echo "filterx -k s $li.loci.kmer2id:dup=Y $li.need.kmer | cut -f 2 > $li.seqid";done >temp.sh
+parallel -j $CPU <temp.sh
+echo "Obtaining the IDs of reads including specific kmer -> output/x*.seqid"
+rm temp.sh
 
-echo "Obtaining the IDs of reads including specific kmer -> output/x??.seqid"
 #get reads
 echo -e "\n***************************************Final****************************************"
-cat output/x??.seqid >output/ALL.seqid
+cat output/x*.seqid >output/ALL.seqid
 count_density.pl output/ALL.seqid output/changeid.fa.fai > output/ALL.density
 select_reads.pl output/ALL.density $DENSITY output/origin2newid.txt output/changeid.fa
 echo "DONE!"

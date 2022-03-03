@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use strict;
 
-die "perl $0 ONTseq_offset.txt x??.kmercount kmer_len\n" if @ARGV!=3;
+die "perl $0 changeid.fa.fai x??.kmercount kmer_len\n" if @ARGV!=3;
 
 
 my $in = $ARGV[0];
@@ -12,7 +12,7 @@ my %hash;
 while (<IN>){
 	chomp;
 	@info = split;
-	$hash{$info[0]} = $info[1];
+	$hash{$info[0]} = $info[2];
 }
 close IN;
 
