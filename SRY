@@ -67,6 +67,11 @@ if ! type seqtk >/dev/null 2>&1; then
 	exit
 fi
 
+if ! type parallel >/dev/null 2>&1; then
+        echo 'parallel is not installed!'
+        exit
+fi
+
 #obtain specific-Y kmers
 
 echo "***********************************Preparation*************************************"
