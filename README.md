@@ -6,7 +6,7 @@ covers more genomic regions  of Y chromosome.
 SRY identified male specific k-mers (MSK) based on population data. To decrease the impact of population structure and sequencing errors, SRY caculated MSK density of each long read and excludes those with lower marker density.
 
 # Installation
-We need samtools,seqtk and jellyfish in your environment, you can use conda to install them and execute "export PATH=$PATH:/env/conda/bin/".
+We need samtools,seqtk,parallel and jellyfish in your environment, you can use conda to install them and execute "export PATH=$PATH:/env/conda/bin/".
 
 # Usage
      Usage: ./SRY (parameters with * must be supplied!)
