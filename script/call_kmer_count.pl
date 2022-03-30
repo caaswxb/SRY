@@ -1,55 +1,72 @@
 #!/usr/bin/perl -w
 use strict;
 
-die "perl $0 target_fq_files male_fq_files female_fq_files kmer_length\n" if @ARGV!=4;
+die "perl $0 male_fq_files female_fq_files kmer_length min_depth max_depth\n" if @ARGV!=5;
 
-my $kmer_len = $ARGV[3];
+my $kmer_len = $ARGV[2];
+my $min_depth = $ARGV[3];
+my $max_depth = $ARGV[4];
 
 my $cmd="output/kmer.sh";
 open OUT,">$cmd";
 
-my ($filterx_cmdt,$filterx_cmdm,$filterx_cmdf);
-if ($ARGV[0]=~/,/){
-	my @tfiles = split(/,/,$ARGV[0]);
-	my $seq = '';
-	for (my $i=0;$i<@tfiles;$i++){
-		print OUT "kmer_count -l $kmer_len -f FQ -o output/T${i}_kmer.dat.gz -i $tfiles[$i] &\n";
-		$seq.=" output/T${i}_kmer.dat.gz";
-	}
-	$filterx_cmdt="filterx -k s $seq |awk \'{c=0;for(i=2;i<=NF;i+=2){c+=\$i;} print \$1\"\\t\"c}\' |gzip > output/Target_kmer.dat.gz\n";
-}else{
-	print OUT "kmer_count -l $kmer_len -f FQ -o output/Target_kmer.dat.gz -i $ARGV[0] &\n";
-}
-if ($ARGV[1]=~/,/){
-	my @mfiles = split(/,/,$ARGV[1]);
-	my $seq = '';
-	for (my $i=0;$i<@mfiles;$i++){
-		print OUT "kmer_count -l $kmer_len -f FQ -o output/M${i}_kmer.dat.gz -i $mfiles[$i] &\n";
-		$seq.=" output/M${i}_kmer.dat.gz";
-	}
-	$filterx_cmdm="filterx -k s $seq |awk \'{c=0;for(i=2;i<=NF;i+=2){c+=\$i;} print \$1\"\\t\"c}\' |gzip > output/Male_kmer.dat.gz\n";
-}else{
-	print OUT "kmer_count -l $kmer_len -f FQ -o output/Male_kmer.dat.gz -i $ARGV[0] &\n";
-}
+my ($filterx_cmdm,$filterx_cmdf);
 
-if ($ARGV[2]=~/,/){
-	my @ffiles = split(/,/,$ARGV[2]);
-	my $seq = '';
-	for (my $i=0;$i<@ffiles;$i++){
-		print OUT "kmer_count -l $kmer_len -f FQ -o output/F${i}_kmer.dat.gz -i $ffiles[$i] &\n";
-		$seq.=" output/F${i}_kmer.dat.gz";
-	}
-	$filterx_cmdf="filterx -k s $seq |awk \'{c=0;for(i=2;i<=NF;i+=2){c+=\$i;} print \$1\"\\t\"c}\' |gzip > output/Female_kmer.dat.gz\n";
-}else{
-	print OUT "kmer_count -l $kmer_len -f FQ -o output/Female_kmer.dat.gz -i $ARGV[0] &\n";
-}
-print OUT "wait\n";
+#cmd of male population
+my @msamples = split(/\+/,$ARGV[0]);
+my $mnum = $#msamples+1;
+my $mlimit = int($mnum*2/3+0.5);
 
-if ($filterx_cmdt || $filterx_cmdm || $filterx_cmdf){
-	print OUT "$filterx_cmdt" if ($filterx_cmdt);
-	print OUT "$filterx_cmdm" if ($filterx_cmdm);
-	print OUT "$filterx_cmdf" if ($filterx_cmdf);
-	print OUT "wait\n";
+my $seq = '';		
+for (my $j=0;$j<@msamples;$j++){
+	if ($msamples[$j]=~/,/){
+		my @mfiles = split(/,/,$msamples[$j]);
+		print OUT "kmer_count -l $kmer_len -f FQ -n $min_depth -o output/M${j}_kmer.dat.gz";
+		for (my $i=0;$i<@mfiles;$i++){
+			print OUT " -i $mfiles[$i]";
+		}
+		print OUT "\n";
+	}else{
+		print OUT "kmer_count -l $kmer_len -f FQ -n $min_depth -o output/M${j}_kmer.dat.gz -i $msamples[$j]\n";
+	}
+
+	if ($max_depth == 0){
+		$seq .= " output/M${j}_kmer.dat.gz";
+	}else{
+		$seq .= " <(zcat output/M${j}_kmer.dat.gz| awk \'\$2<=$max_depth\')";
+	}
 }
+$filterx_cmdm="filterx -1 \'cnt>=$mlimit\' -k s $seq |awk \'{for (i=1;i<=NF;i+=2){if (\$i~/[A-Z]/){print \$i;break}}}\' | gzip > output/Male_kmer.dat.gz\n";
+
+#cmd of female population
+my @fsamples = split(/\+/,$ARGV[1]);
+
+$seq = '';
+for (my $j=0;$j<@fsamples;$j++){
+	if ($fsamples[$j]=~/,/){
+		my @ffiles = split(/,/,$fsamples[$j]);
+		print OUT "kmer_count -l $kmer_len -f FQ -n $min_depth -o output/F${j}_kmer.dat.gz";
+		for (my $i=0;$i<@ffiles;$i++){
+			print OUT " -i $ffiles[$i]";
+		}
+		print OUT "\n";
+	}else{
+		print OUT "kmer_count -l $kmer_len -f FQ -n $min_depth -o output/F{$j}_kmer.dat.gz -i $fsamples[$j]\n";
+	}
+
+	if ($max_depth == 0){
+		$seq .= " output/F${j}_kmer.dat.gz";
+	}else{
+		$seq .= " <(zcat output/F${j}_kmer.dat.gz| awk \'\$2<=$max_depth\')";
+	}
+}
+$filterx_cmdf="filterx -k s -1 \'cnt>=1\' $seq |awk \'{for (i=1;i<=NF;i+=2){if (\$i~/[A-Z]/){print \$i;break}}}\' |gzip > output/Female_kmer.dat.gz\n";
 close OUT;
-`sh output/kmer.sh`;
+
+my $ftcmd="output/ft.sh";
+open OUT1,">$ftcmd";
+if ($filterx_cmdm || $filterx_cmdf){
+	print OUT1 "$filterx_cmdm" if ($filterx_cmdm);
+	print OUT1 "$filterx_cmdf" if ($filterx_cmdf);
+}
+close OUT1;
