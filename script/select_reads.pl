@@ -54,13 +54,13 @@ while (<IN2>){
 			print OUT ">$old2new{$id}\n";
 		}else{
 			$flag = 0;
-			print OUT1 ">$old2new{$id}\n";
+			#print OUT1 ">$old2new{$id}\n";
 		}
 	}else{	
 		if ($flag == 1){
 			print OUT "$_\n";
 		}else{
-			print OUT1 "$_\n";
+			#print OUT1 "$_\n";
 		}
 	}
 }
